@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2023.                            (c) 2023.
+#  (c) 2024.                            (c) 2024.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -66,32 +66,37 @@
 # ***********************************************************************
 #
 
-from caom2pipe import manage_composable as mc
-from blank2caom2 import BlankName
+from os.path import dirname, join, realpath
+from caom2pipe.manage_composable import Config, StorageName, TaskType
+import pytest
+
+COLLECTION = 'JCMTSL'
+SCHEME = 'cadc'
+PREVIEW_SCHEME = 'cadc'
 
 
-def test_is_valid():
-    assert BlankName('anything').is_valid()
-    
+@pytest.fixture()
+def test_config():
+    config = Config()
+    config.collection = COLLECTION
+    config.preview_scheme = PREVIEW_SCHEME
+    config.scheme = SCHEME
+    config.logging_level = 'INFO'
+    config.task_types = [TaskType.INGEST]
+    StorageName.collection = config.collection
+    StorageName.preview_scheme = config.preview_scheme
+    StorageName.scheme = config.scheme
+    StorageName.data_source_extensions = config.data_source_extensions
+    return config
 
-def test_storage_name(test_config):
-    test_obs_id = 'TEST_OBS_ID'
-    test_f_name = f'{test_obs_id}.fits'
-    test_uri = f'{test_config.scheme}:{test_config.collection}/{test_f_name}'
-   for index, entry in enumerate(
-        [
-            test_f_name, 
-            test_uri, 
-            f'https://localhost:8020/{test_f_name}', 
-            f'vos:goliaths/test/{test_f_name}',
-            f'/tmp/{test_f_name}',
-        ]   
-    ):
-        test_subject = BlankName(entry)
-        assert test_subject.file_id == test_f_name.replace('.fits', '').replace('.header', ''), f'wrong file id {index}'
-        assert test_subject.file_uri == test_uri, f'wrong uri {index}'
-        assert test_subject.obs_id == test_obs_id, f'wrong obs id {index}'
-        assert test_subject.product_id == test_obs_id, f'wrong product id {index}'
-        assert test_subject.source_names == [entry], f'wrong source names {index}'
-        assert test_subject.destination_uris == [test_uri], f'wrong uris {index} {test_subject}'
 
+@pytest.fixture()
+def test_data_dir():
+    this_dir = dirname(realpath(__file__))
+    fqn = join(this_dir, 'data')
+    return fqn
+
+
+@pytest.fixture()
+def change_test_dir(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
