@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2022.                            (c) 2022.
+#  (c) 2024.                            (c) 2024.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -61,28 +61,28 @@
 #  <http://www.gnu.org/licenses/>.      pas le cas, consultez :
 #                                       <http://www.gnu.org/licenses/>.
 #
-#  $Revision: 4 $
+#  : 4 $
 #
 # ***********************************************************************
 #
 
-from caom2pipe.manage_composable import Config, StorageName
-import pytest
 
-COLLECTION = 'BLANK'
-SCHEME = 'cadc'
-PREVIEW_SCHEME = 'cadc'
+from caom2pipe import caom_composable as cc
+from jcmtsl2caom2 import main_app
 
 
-@pytest.fixture()
-def test_config():
-    config = Config()
-    config.collection = COLLECTION
-    config.preview_scheme = PREVIEW_SCHEME
-    config.scheme = SCHEME
-    config.logging_level = 'INFO'
-    StorageName.collection = config.collection
-    StorageName.preview_scheme = config.preview_scheme
-    StorageName.scheme = config.scheme
-    return config
+__all__ = ['JCMTSLFile2caom2Visitor']
 
+
+class JCMTSLFile2caom2Visitor(cc.Fits2caom2Visitor):
+    def __init__(self, observation, **kwargs):
+        super().__init__(observation, **kwargs)
+
+    def _get_mapping(self, headers, _):
+        return main_app.JCMTSLMapping(
+            self._storage_name, headers, self._clients, self._observable, self._observation, self._config
+        )
+
+
+def visit(observation, **kwargs):
+    return JCMTSLFile2caom2Visitor(observation, **kwargs).visit()
